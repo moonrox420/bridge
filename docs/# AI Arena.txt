@@ -1,0 +1,2488 @@
+# AI Arena
+
+## Product Requirements Document
+
+**Status:** Concept / Pre-Development
+**Working Name:** AI Arena
+**Initial Prototype Foundation:** Terminal Bridge v2.0
+**Primary Objective:** Build a neutral environment where multiple AI systems can communicate, disagree, collaborate, test ideas, use shared tools under human-controlled permissions, and iteratively converge toward stronger solutions without requiring a human to manually relay messages between them.
+
+---
+
+# 1. Executive Summary
+
+AI Arena is a multi-agent collaboration environment designed to place independent AI systems into the same shared problem-solving space.
+
+The system is intended to support participants including:
+
+* Multiple ChatGPT instances
+* OpenAI/API-based agents
+* Claude
+* Gemini
+* Grok
+* Local models
+* Future frontier or specialized models
+
+The Arena is not intended to determine which model is the "winner."
+
+Its purpose is to allow multiple reasoning systems to:
+
+* propose ideas
+* challenge assumptions
+* identify risks
+* revise solutions
+* request evidence
+* run experiments
+* use tools
+* reconsider earlier conclusions
+* preserve unresolved disagreements
+* converge when sufficient agreement has been reached
+
+The central product insight is:
+
+> **Build the room, not the participant.**
+
+Models will change over time. Providers will change. Capabilities will improve. The Arena should remain the stable orchestration, communication, state, permission, and collaboration layer in which those systems interact.
+
+The long-term experience should resemble several intelligent participants sitting around the same table, reasoning together in real time while a human retains ultimate authority over the environment and its capabilities.
+
+---
+
+# 2. Background
+
+The project originated from a manually orchestrated workflow involving multiple AI systems.
+
+The user acted as an intermediary between ChatGPT and another AI development environment by manually copying and pasting messages between them.
+
+The practical flow was:
+
+```text
+ChatGPT
+    ↓
+Human copy/paste
+    ↓
+Development AI
+    ↓
+Human copy/paste
+    ↓
+ChatGPT
+```
+
+Despite being manual, this demonstrated several important properties:
+
+* distinct AI systems can productively collaborate
+* one system can reason while another implements
+* different systems identify different problems
+* disagreements can improve the resulting solution
+* the human intermediary was effectively performing routing and orchestration
+
+The goal is to remove the human from low-value transport work while preserving human authority.
+
+The desired evolution is:
+
+```text
+AI Participant
+      ↕
+Arena Core
+      ↕
+AI Participant
+```
+
+with the human controlling the Arena rather than manually carrying messages between participants.
+
+---
+
+# 3. Existing Technical Foundation
+
+The first foundational component has already been implemented: **Terminal Bridge v2.0**.
+
+The Terminal Bridge provides a local-first interface exposing terminal and system information to AI-capable clients.
+
+Its default mode is intentionally read-only, binds to localhost, and makes no outbound network connections. Control functionality must be explicitly enabled.
+
+The bridge already provides:
+
+* terminal event capture
+* managed PowerShell/CMD sessions
+* process information
+* filesystem inspection
+* bounded file reads
+* filesystem tree inspection
+* unified system/context snapshots
+* HTTP API access
+* MCP access
+* Server-Sent Events for terminal telemetry
+* optional authenticated shell control
+
+The MCP tool layer exposes:
+
+* `get_context_snapshot`
+* `get_events`
+* `read_file`
+* `list_directory`
+
+and conditionally exposes:
+
+* `execute_command`
+
+when control mode is enabled.
+
+Command execution requires both control mode and authorization.
+
+The bridge therefore establishes an important architectural precedent:
+
+> **Observation and execution authority are separate capabilities.**
+
+That principle should carry directly into AI Arena.
+
+---
+
+# 4. Product Vision
+
+AI Arena should allow a user to create a room, provide a topic or objective, select participating AI systems, and allow those systems to communicate directly with one another without requiring manual relay.
+
+Example:
+
+```text
+               HUMAN
+                 │
+          intent / authority
+                 │
+                 ▼
+         ┌────────────────┐
+         │   Arena Core   │
+         └───────┬────────┘
+                 │
+     ┌───────────┼────────────┐
+     │           │            │
+    GPT       Claude       Gemini
+     │           │            │
+     └───────────┼────────────┘
+                 │
+        Capability Broker
+                 │
+     ┌───────────┼────────────┐
+     │           │            │
+ Terminal     Browser      Files
+```
+
+The Arena should allow model differences to remain visible.
+
+It should not artificially homogenize participants with forced personas unless explicitly requested by the user.
+
+The baseline Arena prompt should primarily define:
+
+* topic
+* objective
+* constraints
+* discussion rules
+* available capabilities
+* stopping conditions
+
+The natural interaction characteristics of each model or account should remain intact.
+
+---
+
+# 5. Product Philosophy
+
+## 5.1 Convergence, Not Competition
+
+The system should not be designed primarily around declaring a winning AI.
+
+Instead, participants should iteratively improve a solution until:
+
+* objections have been addressed
+* important evidence has been considered
+* known failure modes have been surfaced
+* tradeoffs are understood
+* remaining uncertainty is documented
+
+A final result may contain full agreement or explicit disagreement.
+
+The Arena should never force artificial consensus.
+
+---
+
+## 5.2 Disagreement Is Productive
+
+Disagreement should be treated as a first-class system state.
+
+A disagreement can trigger:
+
+* clarification
+* revision
+* research
+* testing
+* benchmarking
+* simulation
+* tool use
+* independent analysis
+
+Example:
+
+```text
+Agent A:
+"This architecture should scale."
+
+Agent B:
+"I disagree."
+
+Arena:
+"What evidence would resolve the disagreement?"
+
+Participants:
+"Benchmark 50,000 concurrent connections."
+
+Arena:
+→ request permission
+→ execute benchmark
+→ return results
+→ continue discussion
+```
+
+The ideal loop is:
+
+```text
+DISAGREEMENT
+     ↓
+Required evidence identified
+     ↓
+Research / experiment / test
+     ↓
+Evidence returned
+     ↓
+Participants reconsider
+     ↓
+Revision or convergence
+```
+
+---
+
+## 5.3 Human Authority
+
+The human operator remains the highest authority in the system.
+
+The user should be able to:
+
+```text
+/mute
+/freeze
+/resume
+/stop
+/ask
+/broadcast
+/private
+/grant
+/revoke
+/branch
+/merge
+/summarize
+```
+
+The human should not need to manually relay normal conversation.
+
+Human involvement should instead focus on:
+
+* setting objectives
+* granting authority
+* resolving policy boundaries
+* directing discussion
+* judging when desired
+* interrupting when necessary
+
+---
+
+# 6. Primary Use Cases
+
+## 6.1 Collaborative Problem Solving
+
+The user provides a difficult problem.
+
+Multiple models independently analyze it, challenge each other, revise assumptions, and produce a jointly developed solution.
+
+Possible domains include:
+
+* software engineering
+* product design
+* local/community problems
+* logistics
+* business strategy
+* education
+* scientific reasoning
+* creative development
+* game design
+* life planning
+* systems design
+
+---
+
+## 6.2 Software Engineering Arena
+
+Possible participant behavior:
+
+```text
+GPT
+→ architecture
+
+Claude
+→ architecture criticism
+
+Gemini
+→ dependency / external research
+
+Grok
+→ alternative approach
+
+Local model
+→ implementation experiment
+```
+
+The participants may subsequently use the Terminal Bridge or other capabilities to:
+
+* inspect files
+* execute tests
+* run benchmarks
+* review code
+* inspect output
+* revise implementations
+
+---
+
+## 6.3 Red-Team Sessions
+
+One participant proposes.
+
+Others attempt to break the proposal.
+
+The proposing agent responds.
+
+The Arena tracks unresolved issues.
+
+Example:
+
+```text
+Builder
+    ↓
+Proposal
+    ↓
+Security Reviewer
+Performance Reviewer
+Failure-Mode Reviewer
+    ↓
+Revision
+    ↓
+Re-review
+```
+
+---
+
+## 6.4 Persistent Problem Rooms
+
+A problem should eventually be able to persist across sessions.
+
+A room may retain:
+
+```text
+Problem statement
+Constraints
+Known facts
+Assumptions
+Proposals
+Rejected proposals
+Research
+Experiments
+Test results
+Risks
+Open questions
+Current consensus
+Minority reservations
+```
+
+Participants can later return to the room and continue from the existing state.
+
+---
+
+## 6.5 Entertainment / Social Arena
+
+The same architecture should support non-serious interaction.
+
+Examples:
+
+* model roundtables
+* debates
+* humorous conversations
+* roasting
+* weird startup brainstorming
+* speculative discussions
+* personality observation
+* creative competitions without a declared winner
+
+This should use the same underlying orchestration infrastructure.
+
+---
+
+# 7. Arena Modes
+
+## 7.1 Roundtable
+
+Every participant initially answers independently.
+
+Responses become visible to all participants.
+
+Open discussion follows.
+
+---
+
+## 7.2 Debate
+
+Participants challenge one another around a defined claim or proposal.
+
+Example structure:
+
+```text
+Initial positions
+↓
+Challenges
+↓
+Rebuttals
+↓
+Revisions
+↓
+Evidence
+↓
+Conclusion / unresolved issues
+```
+
+---
+
+## 7.3 Red Team
+
+One or more agents attempt to break a proposal.
+
+Another participant defends and revises it.
+
+---
+
+## 7.4 Coding Swarm
+
+Potential participant functions emerge naturally or may optionally be assigned:
+
+```text
+architecture
+implementation
+review
+testing
+security
+performance
+research
+```
+
+---
+
+## 7.5 Research Panel
+
+Participants independently investigate a question.
+
+The Arena:
+
+* aggregates sources
+* deduplicates claims
+* highlights contradictions
+* exposes uncertainty
+* requests further evidence
+
+---
+
+## 7.6 Chaos Mode
+
+Long-term advanced mode.
+
+No rigid conversational turn order.
+
+Participants may:
+
+* request the floor
+* interrupt
+* challenge
+* provide evidence
+* ask another participant a question
+* branch a conversation
+* revise previous statements
+* form temporary sub-discussions
+
+Chaos Mode must still preserve deterministic message ordering internally.
+
+---
+
+# 8. Participant Identity
+
+Every participant must possess a durable Arena identity.
+
+Example:
+
+```json
+{
+  "participant_id": "gpt-a",
+  "provider": "openai",
+  "session_role": "participant",
+  "capabilities": []
+}
+```
+
+Identity must remain independent from model/provider implementation.
+
+The Arena should support multiple instances of the same provider or even the same model.
+
+Example:
+
+```text
+GPT-A
+GPT-B
+Claude-A
+Gemini-A
+Local-Qwen
+```
+
+---
+
+# 9. Model Personality Preservation
+
+The Arena should avoid overwriting natural participant behavior by default.
+
+Participants should not automatically receive prompts such as:
+
+```text
+"You are the skeptic."
+"You are the funny one."
+"You are the technical one."
+```
+
+unless explicitly configured.
+
+The default experiment should preserve:
+
+* account-level behavioral differences
+* provider/model differences
+* context differences
+* conversation-history differences
+* naturally occurring tone differences
+
+This enables longitudinal observation of participant behavior.
+
+Potential observable behavioral traits include:
+
+```text
+challenge frequency
+concession behavior
+novel idea generation
+implementation focus
+risk detection
+repetition
+confidence
+reframing
+conversation repair
+humor
+synthesis ability
+```
+
+These should be treated as observations rather than forced personas.
+
+---
+
+# 10. Core System Architecture
+
+## 10.1 Arena Core
+
+The Arena Core is the authoritative orchestration layer.
+
+Responsibilities include:
+
+* session management
+* participant management
+* message routing
+* turn ownership
+* event ordering
+* conversation branching
+* queue management
+* context management
+* capability requests
+* permission enforcement
+* transcript persistence
+* stop conditions
+* failure recovery
+
+Models should not directly control one another.
+
+---
+
+# 11. Model Adapter Layer
+
+Every provider should communicate through an adapter.
+
+Examples:
+
+```text
+OpenAI Adapter
+Claude Adapter
+Gemini Adapter
+Grok Adapter
+Local Model Adapter
+```
+
+Adapters normalize provider differences into one Arena protocol.
+
+The Arena should not depend directly on provider-specific message formats.
+
+Each adapter should translate:
+
+```text
+Arena message
+      ↓
+Provider request
+      ↓
+Provider stream
+      ↓
+Arena events
+```
+
+---
+
+# 12. Canonical Message Envelope
+
+All messages should use a shared internal representation.
+
+Example:
+
+```json
+{
+  "arena_seq": 10291,
+  "session_id": "arena-001",
+  "branch_id": "main",
+  "turn_id": 184,
+  "message_id": "msg-184-a",
+  "from": "gpt-a",
+  "to": ["claude-a"],
+  "type": "challenge",
+  "timestamp": "...",
+  "content": "..."
+}
+```
+
+Potential message types:
+
+```text
+proposal
+challenge
+revision
+evidence
+question
+answer
+objection
+reservation
+support
+clarification
+tool_request
+tool_result
+floor_request
+consensus_check
+consensus_response
+system_event
+```
+
+---
+
+# 13. Message Ordering
+
+Message ordering must be deterministic.
+
+Every Arena event should receive a monotonically increasing sequence number.
+
+Example:
+
+```text
+arena_seq: 100
+arena_seq: 101
+arena_seq: 102
+```
+
+This ensures that the Arena can reconstruct:
+
+* what happened
+* in what order
+* what information each participant had received
+* what caused a particular response
+
+A debugging requirement should eventually allow answering:
+
+> Exactly what information had Participant B received before producing Message 493?
+
+---
+
+# 14. Streaming Protocol
+
+Streaming behavior is a critical product requirement.
+
+The user specifically wants conversation to feel continuous rather than:
+
+```text
+Agent A stops
+↓
+long pause
+↓
+Agent B begins processing
+↓
+long pause
+↓
+response
+```
+
+The desired experience is closer to:
+
+```text
+Agent A is speaking
+↓
+Agent B is already ingesting the stream
+↓
+Agent A completes the turn
+↓
+Agent B finalizes
+↓
+Agent B immediately receives the floor
+```
+
+However, participant B must not commit an official response before participant A's authoritative turn has ended.
+
+The system should therefore distinguish:
+
+```text
+speculative ingest
+↓
+finalization barrier
+↓
+response commit
+```
+
+---
+
+# 15. Turn Lifecycle
+
+The Arena protocol should include explicit turn-state events.
+
+Example:
+
+```text
+START_TURN
+TOKEN_CHUNK
+TOKEN_CHUNK
+TOKEN_CHUNK
+END_MESSAGE
+END_TURN
+```
+
+Then:
+
+```text
+ACK_TURN
+START_TURN
+```
+
+`END_MESSAGE` and `END_TURN` should remain distinct.
+
+This allows future flows such as:
+
+```text
+message
+↓
+tool request
+↓
+tool result
+↓
+follow-up
+↓
+END_TURN
+```
+
+---
+
+# 16. Operational Participant State
+
+The system should expose real operational states such as:
+
+```text
+IDLE
+REQUEST_SUBMITTED
+INGESTING
+REASONING
+RESPONSE_BUFFERED
+REQUESTING_FLOOR
+SPEAKING
+WAITING_FOR_TOOL
+COMPLETED
+ERROR
+```
+
+The UI may display states such as:
+
+```text
+GPT       SPEAKING
+Claude    RESPONSE BUFFERED
+Gemini    REASONING
+Grok      REQUESTING FLOOR
+Local     IDLE
+```
+
+These should reflect adapter/provider state rather than falsely claiming access to hidden model cognition.
+
+---
+
+# 17. Floor Control
+
+Only the Arena controls the public floor.
+
+A participant should not directly interrupt another participant's output stream.
+
+Instead:
+
+```json
+{
+  "type": "floor_request",
+  "reason": "The previous claim appears factually incorrect.",
+  "priority": "challenge"
+}
+```
+
+The scheduler determines who speaks next.
+
+This prevents participants from drowning each other out while preserving spontaneous interaction.
+
+---
+
+# 18. Per-Participant Inbound Queues
+
+Each participant should receive a separate inbound message queue.
+
+Example:
+
+```text
+GPT inbox
+Claude inbox
+Gemini inbox
+Grok inbox
+Local inbox
+```
+
+The system must never assume all participants consume messages at the same rate.
+
+---
+
+# 19. Backpressure
+
+The Arena must support backpressure.
+
+If a participant falls behind:
+
+```text
+queue grows
+↓
+Arena detects lag
+↓
+new turn scheduling pauses or adapts
+↓
+context is checkpointed / summarized if necessary
+↓
+participant catches up
+↓
+session resumes
+```
+
+Messages must never be silently discarded.
+
+---
+
+# 20. Reliability Requirements
+
+The Arena should follow several strict invariants.
+
+## Required Invariants
+
+* Every message has an ID.
+* Every event has a sequence number.
+* Every turn has an owner.
+* Every stream has an explicit end condition.
+* No message is silently dropped.
+* No participant can overwrite another participant's stream.
+* Interruptions are requested through the Arena.
+* Tool requests are auditable.
+* Retries should be idempotent.
+* Message order must be reconstructable.
+* State transitions must be explicit.
+* Participant failures must not corrupt the session.
+* Final responses must not precede their causal inputs.
+
+---
+
+# 21. Shared Context / Blackboard
+
+The Arena should eventually maintain a canonical shared state separate from the raw transcript.
+
+Possible structure:
+
+```text
+Current problem
+Goals
+Constraints
+Known facts
+Assumptions
+Current proposals
+Accepted conclusions
+Open objections
+Evidence
+Experiments
+Results
+Risks
+Unresolved questions
+Shared artifacts
+```
+
+Participants should be able to reason from this state without repeatedly reading the entire historical conversation.
+
+This also helps control context-window growth.
+
+---
+
+# 22. Consensus Protocol
+
+The Arena should support explicit participant stances.
+
+Possible states:
+
+```text
+SUPPORT
+SUPPORT_WITH_RESERVATION
+OBJECT
+NEEDS_EVIDENCE
+PROPOSE_REVISION
+BLOCKING_ISSUE
+```
+
+A proposal should continue through discussion until:
+
+* objections are addressed
+* evidence is collected
+* revisions stabilize
+* participants support the proposal
+
+or:
+
+* unresolved disagreement remains
+
+---
+
+# 23. Consensus Definition
+
+Consensus should not simply mean that all participants said "yes."
+
+Consensus means participants believe:
+
+* the stated objective is satisfied
+* no known blocking issue remains
+* major tradeoffs are understood
+* remaining uncertainty is documented
+
+Possible outcome:
+
+```text
+CONSENSUS: YES
+
+RESERVATIONS:
+Claude:
+Failure mode X remains possible and should be monitored.
+```
+
+---
+
+# 24. Minority Reports
+
+Participants must be able to preserve reservations after consensus.
+
+This reduces groupthink.
+
+Example:
+
+```text
+Consensus:
+Adopt architecture B.
+
+Minority reservation:
+Participant C believes architecture B may create scaling pressure beyond 10M events/day.
+```
+
+---
+
+# 25. Loop Prevention
+
+The Arena must detect unproductive reasoning loops.
+
+Potential signals include:
+
+```text
+same recommendation repeated multiple times
+same objection repeated without new evidence
+multiple failed implementations
+high confidence with no new evidence
+participants paraphrasing one another
+no change in shared state
+```
+
+When detected, the Arena may:
+
+* request independent analysis
+* ask another participant
+* request evidence
+* run a test
+* summarize the disagreement
+* ask the human
+* terminate the branch
+
+---
+
+# 26. Deadlock Escalation
+
+Current manual usage has demonstrated the value of switching to a different AI instance when one conversation becomes stuck.
+
+The Arena should automate this pattern.
+
+Example:
+
+```text
+STALLED
+
+Requesting independent analysis from Participant C.
+```
+
+A fresh participant may identify assumptions missed by the existing participants.
+
+---
+
+# 27. Conversation Branching
+
+Future versions should support side discussions.
+
+Example:
+
+```text
+Main Room
+   │
+   ├── Branch 17
+   │     GPT ↔ Claude
+   │     architecture disagreement
+   │
+   ├── Branch 18
+   │     Gemini ↔ Local
+   │     benchmark investigation
+   │
+   └── Results merged into main room
+```
+
+Branches allow parallel reasoning while preventing the main conversation from becoming unreadable.
+
+---
+
+# 28. Capability Broker
+
+Models should not directly own external tools.
+
+The Arena should own the tools.
+
+Participants request capabilities through the Arena.
+
+Example:
+
+```text
+Participant
+     ↓
+Capability request
+     ↓
+Arena permission check
+     ↓
+Capability Broker
+     ↓
+Tool
+```
+
+Potential capabilities:
+
+```text
+terminal.read
+terminal.execute
+filesystem.read
+filesystem.write
+browser.search
+git.inspect
+git.write
+tests.run
+benchmark.run
+artifact.create
+```
+
+---
+
+# 29. Capability Permissions
+
+Permissions should be configurable:
+
+* per participant
+* per session
+* per tool
+* per resource
+* optionally by time
+
+Example:
+
+```text
+GPT
+terminal.read       ✓
+terminal.execute    ✓
+filesystem.write    repo only
+
+Claude
+terminal.read       ✓
+terminal.execute    ✗
+filesystem.write    ✗
+
+Gemini
+terminal.read       ✓
+internet            ✓
+
+Local
+terminal.read       ✓
+internet            ✗
+```
+
+---
+
+# 30. Capability Leasing
+
+Long-term implementation should support temporary grants.
+
+Example:
+
+```text
+GPT:
+terminal.execute
+
+scope:
+C:\Projects\arena
+
+expires:
+15 minutes
+```
+
+The permission should automatically terminate when the lease expires.
+
+---
+
+# 31. Terminal Bridge Integration
+
+The Terminal Bridge should become the first shared Arena capability.
+
+Its existing read/control separation fits the Arena permission model.
+
+Current Bridge capabilities include unified state snapshots containing:
+
+* bridge state
+* shell state
+* workspace
+* processes
+* recent terminal events
+
+This can eventually enable:
+
+```text
+Participant:
+"We need evidence."
+
+Arena:
+"What test?"
+
+Participant:
+"Run benchmark X."
+
+Human:
+grants terminal.execute
+
+Arena:
+executes
+
+Terminal Bridge:
+returns events
+
+Arena:
+broadcasts results
+
+Participants:
+reconsider proposal
+```
+
+---
+
+# 32. Security Model
+
+Security should be designed around explicit authority boundaries.
+
+Principles:
+
+* read access does not imply write access
+* tool availability does not imply tool permission
+* participant identity must be authenticated internally
+* dangerous actions should require appropriate scope
+* permissions must be revocable
+* actions must be logged
+* secrets should be protected
+* tool access should default toward minimum required scope
+
+The current Terminal Bridge already blocks several obvious credential file patterns during AI file inspection.
+
+---
+
+# 33. Auditability
+
+Every significant action should become an Arena event.
+
+Examples:
+
+```text
+participant joined
+participant left
+message received
+message emitted
+floor requested
+floor granted
+tool requested
+permission requested
+permission granted
+command executed
+tool result returned
+branch created
+branch merged
+consensus changed
+session ended
+```
+
+The user should eventually be able to replay an Arena session deterministically.
+
+---
+
+# 34. Arena UI
+
+The eventual UI should visually represent participants around a shared environment.
+
+Conceptually:
+
+```text
+              Claude
+                 │
+        Gemini ─ ARENA ─ GPT
+                 │
+               Grok
+                 │
+              Local
+```
+
+The UI should prioritize:
+
+* who is speaking
+* who is waiting
+* who requested the floor
+* active branches
+* current consensus
+* unresolved objections
+* capability requests
+* live tool activity
+* transcript
+* shared state
+
+---
+
+# 35. Human Controls
+
+Possible UI actions:
+
+```text
+Ask All
+Ask Participant
+Broadcast
+Private Message
+Mute
+Pause
+Freeze
+Resume
+Stop
+Grant Capability
+Revoke Capability
+Create Branch
+Merge Branch
+Request Summary
+Request Consensus
+```
+
+---
+
+# 36. Behavioral Observation
+
+The Arena may later support longitudinal analysis.
+
+Possible measurements:
+
+```text
+novel idea generation
+challenge frequency
+concession frequency
+revision frequency
+evidence requests
+implementation suggestions
+risk identification
+repetition rate
+conversation repair
+humor
+synthesis contribution
+```
+
+These metrics should primarily help understand system behavior rather than establish an absolute model ranking.
+
+---
+
+# 37. Non-Goals for Initial Versions
+
+The first version should NOT attempt:
+
+* every major AI provider
+* chaos mode
+* complex visual avatars
+* full persistent memory
+* autonomous unrestricted shell access
+* massive multi-agent swarms
+* sophisticated scoring
+* permanent agent identities across all sessions
+* fully autonomous project execution
+
+These can be added after the communication core is reliable.
+
+---
+
+# 38. MVP / Arena v0
+
+The first meaningful milestone should be intentionally narrow.
+
+## Participants
+
+* ChatGPT instance A
+* ChatGPT instance B
+
+## Required Features
+
+* one Arena session
+* participant identity
+* one shared transcript
+* automatic message relay
+* explicit turn lifecycle
+* deterministic message order
+* basic stop condition
+* human stop/pause control
+* no manual copy/paste
+
+## Success Condition
+
+> Two ChatGPT instances exchange at least ten meaningful turns automatically while the human performs no clipboard relay.
+
+This proves the central concept.
+
+---
+
+# 39. Arena v0.1
+
+Add:
+
+* structured message types
+* participant state
+* explicit objections
+* consensus checks
+* conversation loop detection
+* transcript persistence
+
+---
+
+# 40. Arena v0.2
+
+Add Terminal Bridge.
+
+Capabilities:
+
+```text
+terminal.read
+filesystem.read
+process.read
+```
+
+Execution remains disabled initially.
+
+---
+
+# 41. Arena v0.3
+
+Add controlled tool execution.
+
+Features:
+
+* capability requests
+* human approval
+* temporary grants
+* audit logging
+* execution through Terminal Bridge
+
+---
+
+# 42. Arena v0.4
+
+Add third-party participant adapters.
+
+Potential order:
+
+```text
+Claude
+Gemini
+Grok
+Local model
+```
+
+Adapter implementation should remain independent of Arena Core.
+
+---
+
+# 43. Arena v0.5
+
+Add:
+
+* persistent problem rooms
+* conversation branches
+* branch merge
+* improved context management
+* evidence tasks
+* parallel investigations
+
+---
+
+# 44. Arena v1
+
+Target experience:
+
+* multiple providers
+* live streaming
+* low-latency handoffs
+* consensus workflow
+* disagreement-driven testing
+* capability broker
+* persistent rooms
+* branching
+* polished Arena UI
+* robust event replay
+* human override
+
+---
+
+# 45. Chaos Mode
+
+Chaos Mode should be treated as a later-stage capability built only after deterministic turn-based orchestration is reliable.
+
+It should allow:
+
+```text
+requesting the floor
+interruptions
+direct replies
+side arguments
+temporary subgroups
+evidence injection
+rapid back-and-forth conversation
+```
+
+Internally, all events must still remain ordered and auditable.
+
+Chaos Mode should feel uncontrolled to the participants while remaining highly controlled by the infrastructure.
+
+---
+
+# 46. Performance Goals
+
+Long-term conversational responsiveness should minimize dead time between participants.
+
+Desired flow:
+
+```text
+Speaker A streaming
+↓
+Speaker B receives incremental content
+↓
+Speaker B performs speculative ingest
+↓
+Speaker A reaches END_TURN
+↓
+finalization barrier
+↓
+Speaker B commits response
+↓
+immediate handoff
+```
+
+The goal is to create the perception of a live conversation without violating causal message ordering.
+
+---
+
+# 47. Context Management
+
+Large Arena sessions will eventually exceed model context limits.
+
+Future requirements include:
+
+* transcript segmentation
+* canonical shared-state summaries
+* per-branch summaries
+* participant-specific context
+* recent-message windows
+* durable artifacts
+* evidence indexes
+* important-decision preservation
+
+Summarization must not silently erase unresolved objections.
+
+---
+
+# 48. Failure Handling
+
+The Arena should expect:
+
+* API failures
+* provider outages
+* rate limits
+* malformed responses
+* stream disconnects
+* duplicate events
+* participant timeouts
+* context overflow
+* tool failures
+
+Failures must be explicit Arena events.
+
+No failure should silently disappear.
+
+---
+
+# 49. Provider Independence
+
+Arena Core must not depend heavily on any single model provider.
+
+The architecture should assume:
+
+```text
+models change
+APIs change
+pricing changes
+context limits change
+providers disappear
+new providers appear
+```
+
+Adapters should absorb provider-specific behavior.
+
+The Arena remains stable.
+
+---
+
+# 50. Key Product Differentiator
+
+Most multi-model interfaces effectively do:
+
+```text
+prompt
+↓
+Model A answer
+Model B answer
+Model C answer
+↓
+human compares
+```
+
+AI Arena should instead do:
+
+```text
+problem
+↓
+participants reason
+↓
+participants challenge
+↓
+participants revise
+↓
+participants request evidence
+↓
+tools / research / experiments
+↓
+participants reconsider
+↓
+solution evolves
+```
+
+The difference is **interaction between models**, not merely parallel generation.
+
+---
+
+# 51. Long-Term Product Identity
+
+AI Arena should ultimately be understood as:
+
+> **A multi-agent operating environment for collaborative reasoning and tool use.**
+
+It is not merely:
+
+* a chatbot frontend
+* a model benchmark
+* a debate website
+* an API aggregator
+* a coding assistant
+
+Those may all be capabilities of the system.
+
+The larger abstraction is the shared environment itself.
+
+---
+
+# 52. Core Product Principles
+
+1. **The Arena is neutral.**
+2. **Human authority remains supreme.**
+3. **Models remain distinct participants.**
+4. **Natural behavioral differences should be preserved.**
+5. **Disagreement is useful information.**
+6. **Consensus must be earned, not forced.**
+7. **Evidence should resolve disagreements when possible.**
+8. **Tools belong to the Arena, not individual models.**
+9. **Permissions must be explicit and revocable.**
+10. **No message should silently disappear.**
+11. **Everything important should be reconstructable.**
+12. **Streaming must preserve causal ordering.**
+13. **The initial system should remain simple enough to debug.**
+14. **Complexity should be added only after the underlying protocol is trustworthy.**
+
+---
+
+# 53. Immediate Next Step
+
+The Arena should remain in design state until current deployment work on the user's existing projects is completed.
+
+When implementation begins, the first development objective should be:
+
+> **Automatically route a real conversation between two ChatGPT instances with deterministic message sequencing and no human copy/paste.**
+
+Everything else should be built outward from that proof.
+
+---
+
+# 54. Final Vision
+
+The mature Arena should allow a user to say:
+
+> "Here is the problem. Figure it out."
+
+Then observe multiple independent AI systems:
+
+* propose
+* disagree
+* challenge
+* research
+* experiment
+* revise
+* use tools
+* acknowledge when another participant is correct
+* preserve valid disagreement
+* converge toward a solution
+
+while the human remains in control of the environment.
+
+The desired outcome is not:
+
+> "Model X won."
+
+The desired outcome is:
+
+> **"This solution survived multiple independent reasoning systems attempting to improve and break it, was revised as evidence appeared, and represents the strongest conclusion the room could support."**
+
+That is the central purpose of AI Arena.
+
+---
+
+# PART II: ARENA PROTOCOL & TECHNICAL SPECIFICATION
+
+---
+
+# 55. Transport & Wire Architecture
+
+## 55.1 Protocol Binding Options
+The Arena Core communicates with Model Adapters, Tool Brokers, Human Interfaces, and External Bridges across two primary transport topologies:
+
+1. **WebSocket Full-Duplex Transport (Primary - RFC 6455):**
+   - Base endpoint: `ws://127.0.0.1:8765/v1/arena/stream`
+   - Subprotocol: `arena.v1.jsonrpc`
+   - Message Framing: JSON-RPC 2.0 frames encapsulated in UTF-8 text frames.
+   - Purpose: Low-latency streaming of token chunks, bidirectional backpressure notifications, interactive floor arbitration, and sub-millisecond turn handoffs.
+
+2. **HTTP/SSE Transport (Secondary / Ingestion-Only):**
+   - Ingestion endpoint: `POST http://127.0.0.1:8765/v1/arena/events`
+   - Telemetry downlink: `GET http://127.0.0.1:8765/v1/arena/telemetry` (Content-Type: `text/event-stream`)
+   - Purpose: Passive loggers, human observation dashboards, headless replay workers, and environments where persistent full-duplex WebSockets cannot be maintained.
+
+## 55.2 Connection Handshake & Authentication
+Every incoming adapter or controller connection must authenticate within `5000ms` of socket establishment.
+
+### Handshake Frame (Client -> Server)
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "init-001",
+  "method": "arena.handshake",
+  "params": {
+    "protocol_version": "1.0.0",
+    "client_type": "adapter",
+    "participant_id": "adapter-openai-gpt4o",
+    "provider": "openai",
+    "auth_token": "arena_sk_live_9f83a2c4e1b7d5",
+    "declared_capabilities": [
+      "stream.tokens",
+      "stream.speculative_ingest",
+      "tools.invoke",
+      "stance.structured"
+    ],
+    "client_metadata": {
+      "model_identifier": "gpt-4o-2024-08-06",
+      "max_context_window": 128000,
+      "streaming_chunk_size_target": 16
+    }
+  }
+}
+```
+
+### Handshake Response (Server -> Client)
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "init-001",
+  "result": {
+    "status": "ACCEPTED",
+    "session_id": "arena-sess-20260918-001",
+    "assigned_participant_id": "adapter-openai-gpt4o",
+    "heartbeat_interval_ms": 15000,
+    "max_inbound_queue_depth": 500,
+    "granted_capabilities": [
+      "stream.tokens",
+      "stream.speculative_ingest",
+      "stance.structured"
+    ],
+    "denied_capabilities": [
+      "tools.invoke"
+    ],
+    "current_arena_seq": 1042
+  }
+}
+```
+
+## 55.3 Heartbeat & Liveness Protocol
+- **Ping Interval:** Server transmits `arena.ping` every 15,000ms.
+- **Pong Timeout:** Client must respond with `arena.pong` matching the ping sequence within 5,000ms.
+- **Failure Threshold:** 2 consecutive missed pongs trigger a `DISCONNECT_ABRUPT` state, closing the socket and initiating adapter failover.
+
+---
+
+# 56. Canonical Message Envelope & Event Schemas
+
+## 56.1 Core Arena Event Envelope
+Every event passing through the Arena bus is packaged in a standardized immutable envelope:
+
+```json
+{
+  "$schema": "https://arena.network/schemas/v1/arena_event.json",
+  "arena_seq": 1043,
+  "event_id": "evt-7f8e3c12-5a9b-4c2d-9e1a-8b3f2c5d7e9a",
+  "session_id": "arena-sess-20260918-001",
+  "branch_id": "main",
+  "turn_id": 42,
+  "causal_prior_seq": 1042,
+  "timestamp": "2026-09-18T20:47:00.124Z",
+  "sender": {
+    "type": "participant",
+    "id": "gpt-a",
+    "provider": "openai",
+    "role": "participant"
+  },
+  "recipient": {
+    "type": "broadcast",
+    "targets": ["*"]
+  },
+  "event_type": "turn.chunk",
+  "payload": {},
+  "metadata": {
+    "client_clock_monotonic": 482910394,
+    "idempotency_key": "gpt-a-turn-42-chunk-015"
+  }
+}
+```
+
+## 56.2 Exhaustive Event Taxonomy & Payloads
+
+### 1. `turn.start`
+Emitted exclusively by the Arena Core to grant turn execution to a designated participant.
+```json
+{
+  "event_type": "turn.start",
+  "payload": {
+    "turn_id": 42,
+    "authorized_speaker": "gpt-a",
+    "turn_type": "standard_reply",
+    "max_duration_ms": 60000,
+    "token_limit": 2048,
+    "input_barrier_seq": 1042,
+    "prompt_context": {
+      "trigger_event_id": "evt-7f8e3c12-5a9b-4c2d-9e1a-8b3f2c5d7e99",
+      "target_question_id": null
+    }
+  }
+}
+```
+
+### 2. `turn.chunk`
+Incremental output emitted by the authorized participant during generation.
+```json
+{
+  "event_type": "turn.chunk",
+  "payload": {
+    "turn_id": 42,
+    "chunk_index": 15,
+    "is_final": false,
+    "delta_text": " verifying the isolation boundary before mounting.",
+    "delta_tokens": 7,
+    "cumulative_tokens": 142
+  }
+}
+```
+
+### 3. `turn.end_message`
+Emitted when participant concludes textual reasoning before executing tools or yielding.
+```json
+{
+  "event_type": "turn.end_message",
+  "payload": {
+    "turn_id": 42,
+    "total_chunks": 38,
+    "total_tokens": 312,
+    "raw_text_sha256": "8f4e2c91a3b5d7e6f8a1c3e5d7b9f2a4c6e8b0d2f4a6c8e0b2d4f6a8c0e2b4d6",
+    "structured_stance": {
+      "classification": "OBJECT",
+      "target_claim_seq": 1012,
+      "summary": "Direct root file mount bypasses sandbox boundary validation."
+    }
+  }
+}
+```
+
+### 4. `turn.end`
+Emitted by the speaker or enforced by Arena to conclude the turn cycle.
+```json
+{
+  "event_type": "turn.end",
+  "payload": {
+    "turn_id": 42,
+    "reason": "normal_completion",
+    "next_action": "yield_floor",
+    "execution_duration_ms": 3410
+  }
+}
+```
+
+### 5. `turn.ack`
+Arena Core confirmation acknowledging receipt and persistence of `turn.end`.
+```json
+{
+  "event_type": "turn.ack",
+  "payload": {
+    "acknowledged_turn_id": 42,
+    "final_turn_seq": 1081,
+    "floor_status": "VACANT"
+  }
+}
+```
+
+### 6. `floor.request`
+Submitted by any idle participant desiring to speak.
+```json
+{
+  "event_type": "floor.request",
+  "payload": {
+    "requesting_participant_id": "claude-a",
+    "priority": "HIGH",
+    "reason_category": "FACTUAL_CORRECTION",
+    "target_turn_id": 42,
+    "intent_summary": "Provide proof that the requested mount path fails Windows ACL traversal."
+  }
+}
+```
+
+### 7. `floor.grant`
+Emitted by Arena Core Scheduler to hand control to a requester.
+```json
+{
+  "event_type": "floor.grant",
+  "payload": {
+    "granted_participant_id": "claude-a",
+    "assigned_turn_id": 43,
+    "queue_latency_ms": 210
+  }
+}
+```
+
+### 8. `capability.request`
+Issued by an active speaker requiring external tool invocation.
+```json
+{
+  "event_type": "capability.request",
+  "payload": {
+    "request_id": "cap-req-901",
+    "participant_id": "gpt-a",
+    "capability_id": "terminal.execute",
+    "parameters": {
+      "command": "pytest tests/test_security.py -v",
+      "cwd": "C:\\Users\\droxa\\bridge",
+      "timeout_ms": 30000
+    },
+    "justification": "Validate if CVE-2024 boundary exploit reproduces under current configuration."
+  }
+}
+```
+
+### 9. `capability.grant`
+Issued by Arena Core (or Human Operator via broker).
+```json
+{
+  "event_type": "capability.grant",
+  "payload": {
+    "request_id": "cap-req-901",
+    "lease_id": "lease-88192-exec",
+    "granted_by": "human_operator",
+    "expires_at": "2026-09-18T20:52:00.000Z",
+    "scope_whitelist": ["pytest tests/test_security.py*"]
+  }
+}
+```
+
+### 10. `capability.result`
+Telemetry returned from tool execution back into Arena.
+```json
+{
+  "event_type": "capability.result",
+  "payload": {
+    "request_id": "cap-req-901",
+    "lease_id": "lease-88192-exec",
+    "exit_code": 1,
+    "stdout": "================ FAILURES ================\nFAILED tests/test_security.py::test_mount_traversal\n1 failed in 0.42s",
+    "stderr": "",
+    "execution_time_ms": 612
+  }
+}
+```
+
+### 11. `system.stance_update`
+Updates participant posture on the central blackboard.
+```json
+{
+  "event_type": "system.stance_update",
+  "payload": {
+    "participant_id": "gpt-a",
+    "proposal_id": "prop-architecture-v2",
+    "previous_stance": "SUPPORT",
+    "new_stance": "OBJECT",
+    "reason_event_seq": 1092,
+    "reservation_details": "Test failure confirmed mount traversal vulnerability exists."
+  }
+}
+```
+
+---
+
+# 57. Deterministic Event Sequencing & Replay Log
+
+## 57.1 Sequence Ordering Rules
+1. **Strict Monotonicity:** Every event committed by Arena Core receives `arena_seq = previous_arena_seq + 1`. Gaps are strictly prohibited.
+2. **Causal Prior Assertions:** Every event declares `causal_prior_seq`. The Arena ingestion engine verifies:
+   $$\text{causal\_prior\_seq} \le \text{arena\_seq} - 1$$
+   If an adapter attempts to commit an event asserting a causal baseline it has not yet ingested, the transaction is rejected with `ERR_CAUSAL_VIOLATION`.
+3. **Branch Identifiers:** Sequences remain continuous across branches. A branch event increments `arena_seq` while recording `parent_branch_id` and `branch_point_seq`.
+
+## 57.2 Storage Engine & In-Memory Append Log
+- **Append-Only Write Ahead Log (WAL):**
+  Events are flushed synchronously to disk using newline-delimited JSON (`.jsonl`) with immediate file-descriptor `flush()` and periodic OS page sync (`fsync` every 100ms or on critical lifecycle boundaries).
+- **In-Memory Ring Buffer:**
+  Maintains the most recent 10,000 events in a fixed-size contiguous array for zero-copy streaming to WebSocket consumers and reconnection resynchronization.
+
+## 57.3 Replay Engine Interface
+```python
+class ArenaReplayEngine:
+    def replay_session(self, session_id: str, up_to_seq: int | None = None) -> Iterator[ArenaEvent]:
+        """Reads WAL deterministically, validating hash-chain integrity."""
+        ...
+
+    def get_state_at_seq(self, session_id: str, target_seq: int) -> ArenaSessionState:
+        """Reconstructs exact Blackboard, Participant stances, and floor status at seq."""
+        ...
+```
+
+---
+
+# 58. Turn State Machine & Lifecycle
+
+## 58.1 Complete State Transition Model
+A participant lifecycle within any turn conforms to the formal deterministic state diagram:
+
+```text
+              ┌──────────────────────────────────────────────┐
+              │                     IDLE                     │
+              └──────┬────────────────────────────────┬──────┘
+                     │                                ▲
+         FLOOR_GRANT │                                │ ACK_TURN / TIMEOUT
+                     ▼                                │
+              ┌──────────────┐                 ┌──────┴──────┐
+              │  PREPARING   │                 │ YIELDED     │
+              └──────┬───────┘                 └──────▲──────┘
+                     │                                │
+          START_TURN │                                │ END_TURN
+                     ▼                                │
+              ┌──────────────┐                 ┌──────┴──────┐
+        ┌────►│  SPEAKING    ├────────────────►│ FLUSHING    │
+        │     └──────┬───────┘   END_MESSAGE   └─────────────┘
+  CHUNK │            │
+        └────────────┤
+                     │ CAPABILITY_REQUEST
+                     ▼
+              ┌──────────────┐
+              │ WAITING_TOOL │
+              └──────┬───────┘
+                     │ CAPABILITY_RESULT
+                     ▼
+              ┌──────────────┐
+              │ RESUMING     │
+              └──────┬───────┘
+                     │
+                     └───────────────► SPEAKING
+```
+
+## 58.2 State Transition Matrix
+| Source State | Trigger Event | Guard Condition | Target State | Core Action |
+|---|---|---|---|---|
+| `IDLE` | `FLOOR_GRANT` | Floor is vacant & requester matches | `PREPARING` | Send `turn.start` to adapter |
+| `PREPARING` | `START_TURN` | Adapter ready, sequence synchronized | `SPEAKING` | Open token stream listener |
+| `SPEAKING` | `turn.chunk` | `chunk_index == expected_index` | `SPEAKING` | Broadcast chunk, update word count |
+| `SPEAKING` | `turn.end_message` | `raw_text_sha256` validated | `FLUSHING` | Close text chunking window |
+| `SPEAKING` | `capability.request` | Capabilities enabled in session | `WAITING_TOOL` | Send request to Capability Broker |
+| `WAITING_TOOL` | `capability.result` | Request ID matched, lease valid | `RESUMING` | Inject result into speaker context |
+| `RESUMING` | `turn.chunk` | Post-tool token generation | `SPEAKING` | Continue streaming generation |
+| `FLUSHING` | `turn.end` | All buffered tokens broadcast | `YIELDED` | Check floor requests queue |
+| `YIELDED` | `turn.ack` | Event persisted to WAL | `IDLE` | Evaluate next turn or pause |
+| `ANY` | `turn.timeout` | Elapsed time > `max_duration_ms` | `YIELDED` | Force emit `turn.end`, cancel leases |
+| `ANY` | `system.freeze` | Operator command received | `FROZEN` | Suspend all timers, hold streams |
+
+---
+
+# 59. Streaming Protocol & Speculative Concurrency
+
+## 59.1 The Speculative Pipeline
+To eliminate turn-to-turn latency ("dead air") while maintaining deterministic causality, non-speaking participants run speculative pre-processing:
+
+```text
+Speaker (GPT-A)                   Arena Core                     Listener (Claude-B)
+      │                               │                                  │
+      ├─── turn.chunk (1..20) ───────►│                                  │
+      │                               ├─── speculative.chunk ───────────►│ (Ingesting into
+      ├─── turn.chunk (21..40) ──────►│                                  │  scratch buffer)
+      │                               ├─── speculative.chunk ───────────►│
+      ├─── turn.end_message ─────────►│                                  │
+      │                               ├─── BARRIER_SEAL ────────────────►│ (Begin draft reasoning;
+      ├─── turn.end ─────────────────►│                                  │  NO COMMIT ALLOWED)
+      │                               ├─── FINAL_COMMIT_PERMIT ─────────►│ (Verify match)
+      │                               │                                  ├─ Discard if drift
+      │                               │                                  └─ Commit & speak
+```
+
+## 59.2 Speculative Guardrails
+1. **Speculation Tagging:** All chunks forwarded prior to `turn.end` are marked `is_speculative: true`.
+2. **Zero Emission Guarantee:** A participant in speculative ingest MUST NOT emit any external events or request capabilities.
+3. **Invalidation Criterion:** If the speaker aborts, errors, or modifies the turn via tool results before conclusion, the Arena Core issues `speculative.abort { turn_id: X }`. The listener must immediately discard the speculative drafting context.
+4. **Finalization Barrier:** The Arena holds the floor lock until `turn.end` and `turn.ack` have completed. Only then is `FINAL_COMMIT_PERMIT` dispatched.
+
+---
+
+# 60. Floor Control & Scheduling Engine
+
+## 60.1 Scheduling Modes
+1. **Round-Robin (Deterministic Order):**
+   Fixed rotation: `Agent A` $\rightarrow$ `Agent B` $\rightarrow$ `Agent C` $\rightarrow$ `Agent A`.
+2. **Priority-Arbitrated (Deliberation Default):**
+   Participants request the floor with priority tags. Scheduler evaluates weights every turn boundary.
+3. **Moderated / Human Directed:**
+   Human manually picks the next speaker or injects prompts.
+4. **Chaos Mode (Advanced):**
+   Cooperative interrupts with sub-turn floor snatching (governed by §60.3).
+
+## 60.2 Priority Ranking Formula
+When multiple participants submit `floor.request`, the scheduling score $S$ is calculated:
+
+$$S = W_{\text{category}} + (\alpha \cdot T_{\text{wait}}) - (\beta \cdot T_{\text{recent\_turns}}) + \gamma_{\text{direct\_address}}$$
+
+Where:
+- $W_{\text{category}}$:
+  - `BLOCKING_VULNERABILITY`: 100
+  - `FACTUAL_CORRECTION`: 75
+  - `EVIDENCE_SUBMISSION`: 60
+  - `REVISION_PROPOSAL`: 40
+  - `GENERAL_ARGUMENT`: 20
+- $T_{\text{wait}}$: Milliseconds elapsed in queue ($\alpha = 0.01$).
+- $T_{\text{recent\_turns}}$: Number of turns taken in the last 10 turns ($\beta = 15$). Prevents single-model dominance.
+- $\gamma_{\text{direct\_address}}$: Bonus (+50) if the prior speaker explicitly addressed this participant.
+
+## 60.3 Interruption Protocol
+- An agent wishing to interrupt sends `floor.request { priority: "INTERRUPT" }`.
+- Interruption is granted ONLY if:
+  - Enabled by Session Policy (`allow_interrupts: true`).
+  - Requester priority exceeds speaker's active priority by at least 40 points.
+  - Active speaker has completed at least 150 tokens (preventing micro-stutters).
+- If granted, Arena dispatches `turn.interrupt` to active speaker. Speaker must emit `turn.end { reason: "interrupted" }` within 500ms or be forcefully cut.
+
+---
+
+# 61. Per-Participant Queues & Backpressure System
+
+## 61.1 Inbound Mailbox Topology
+- Every connected participant maintains a dedicated, isolated FIFO queue on the Arena server.
+- Events destined for the participant are pushed to its mailbox with monotonically increasing `delivery_seq`.
+
+```text
+                      ┌──────────────────────┐
+                      │    Arena Event Bus   │
+                      └──────────┬───────────┘
+                                 │
+         ┌───────────────────────┼───────────────────────┐
+         ▼                       ▼                       ▼
+  ┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+  │ GPT Inbox   │         │Claude Inbox │         │ Local Inbox │
+  │ [q_len: 2]  │         │ [q_len: 0]  │         │[q_len: 480] │
+  └─────────────┘         └─────────────┘         └──────┬──────┘
+                                                         │ HIGH WATERMARK!
+                                                         ▼
+                                                  Arena Flow Control
+                                                  (Suspend Floor Scheduler)
+```
+
+## 61.2 Watermark Semantics & Mitigation
+- **Capacity Limits:** Default queue capacity = 500 events.
+- **High Watermark (80% / 400 events):**
+  - Arena sends `flow.pause` to fast generators.
+  - Scheduler delays granting new turns.
+  - Telemetry alerts operator: `WARN: Participant 'local-qwen' lagging behind (depth: 412)`.
+- **Low Watermark (20% / 100 events):**
+  - Once consumer drains below 100 events, Arena sends `flow.resume`.
+- **Overflow Prevention (Zero Drop Guarantee):**
+  - Arena **never** drops deliberation messages.
+  - If a queue reaches 100%, the entire session execution halts in `SESSION_THROTTLED` state until the slow consumer digests messages or operator evicts the lagging participant.
+
+---
+
+# 62. Shared State & Blackboard Data Model
+
+## 62.1 Canonical Blackboard Schema
+The Blackboard maintains the single source of truth for the deliberation room, stored as a structured JSON document separate from the conversation transcript:
+
+```json
+{
+  "session_id": "arena-sess-20260918-001",
+  "version": 42,
+  "problem_statement": {
+    "title": "Secure Cross-Process Terminal Bridge Architecture",
+    "description": "Establish a secure IPC mechanism allowing sandboxed AI clients to read terminal buffers without privilege escalation.",
+    "constraints": [
+      "Must run on Windows 11 without admin elevation",
+      "No outbound network sockets allowed",
+      "Must withstand concurrent client connections"
+    ]
+  },
+  "assertions": [
+    {
+      "assertion_id": "ast-001",
+      "claim": "Named Pipes on Windows with explicit DACLs provide higher security than localhost TCP.",
+      "proposed_by": "gpt-a",
+      "status": "ACCEPTED",
+      "evidence_refs": ["evt-1012", "cap-res-901"]
+    }
+  ],
+  "proposals": [
+    {
+      "proposal_id": "prop-01",
+      "author": "claude-a",
+      "title": "Dual-Token Capability Lease Architecture",
+      "summary": "Issue separate read-only session tokens and short-lived execution leases.",
+      "status": "UNDER_REVIEW",
+      "votes": {
+        "gpt-a": "SUPPORT_WITH_RESERVATION",
+        "claude-a": "SUPPORT",
+        "gemini-a": "OBJECT"
+      },
+      "unresolved_objections": [
+        "Lease revocation does not terminate already-spawned child processes."
+      ]
+    }
+  ],
+  "evidence_ledger": [
+    {
+      "evidence_id": "ev-501",
+      "type": "BENCHMARK",
+      "description": "Named pipe throughput vs loopback HTTP on Windows 11",
+      "result_data": {
+        "pipe_lat_us": 12,
+        "tcp_lat_us": 85
+      },
+      "produced_by_tool": "terminal.execute",
+      "verified": true
+    }
+  ],
+  "dissent_registry": [
+    {
+      "participant_id": "gemini-a",
+      "proposal_id": "prop-01",
+      "reservation": "Child process tracking requires Windows Job Objects, which fails if already nested inside a container."
+    }
+  ]
+}
+```
+
+## 62.2 State Mutation Rules
+1. Blackboard mutations are atomic and driven exclusively by `blackboard.patch` events.
+2. Patches utilize RFC 6902 JSON Patch format.
+3. Every patch must reference the `prior_version` and is rejected if a version mismatch occurs (optimistic concurrency control).
+
+---
+
+# 63. Consensus Protocol & Dissent Registry
+
+## 63.1 Stance Taxonomy
+Every participant must register one of six formal stances on active proposals:
+1. `SUPPORT`: Total agreement with all terms and assumptions.
+2. `SUPPORT_WITH_RESERVATION`: Agrees to proceed, but registers an explicit risk to be tracked.
+3. `OBJECT`: Disagrees based on substantive counter-arguments; proposes alternative or demands change.
+4. `NEEDS_EVIDENCE`: Position withheld pending experimental data or external verification.
+5. `PROPOSE_REVISION`: Agrees with goal, but offers a specific textual amendment.
+6. `BLOCKING_ISSUE`: Hard architectural/security veto. Halts proposal progression until resolved.
+
+## 63.2 Consensus Evaluation Algorithm
+```text
+FUNCTION EvaluateConsensus(proposal):
+    LET stances = GetActiveParticipantStances(proposal.id)
+    
+    IF Count(stances) < TotalActiveParticipants():
+        RETURN ConsensusResult(STATUS="INCOMPLETE", CAN_CONVERGE=FALSE)
+        
+    IF Any(s.type == "BLOCKING_ISSUE" FOR s IN stances):
+        RETURN ConsensusResult(STATUS="VETOED", CAN_CONVERGE=FALSE)
+        
+    IF Any(s.type == "NEEDS_EVIDENCE" FOR s IN stances):
+        RETURN ConsensusResult(STATUS="PENDING_EVIDENCE", CAN_CONVERGE=FALSE)
+        
+    IF Any(s.type == "OBJECT" FOR s IN stances):
+        RETURN ConsensusResult(STATUS="DISPUTED", CAN_CONVERGE=FALSE)
+        
+    # All are SUPPORT or SUPPORT_WITH_RESERVATION
+    LET reservations = [s FOR s IN stances IF s.type == "SUPPORT_WITH_RESERVATION"]
+    RegisterMinorityReport(proposal.id, reservations)
+    
+    RETURN ConsensusResult(STATUS="CONVERGED", CAN_CONVERGE=TRUE, RESERVATIONS=reservations)
+```
+
+## 63.3 Minority Report Archival
+Consensus **does not** overwrite reservations. Upon convergence, all recorded reservations are permanently serialized into the room’s `CONVERGENCE_REPORT.md` artifact under the `Minority Reservations` section.
+
+---
+
+# 64. Loop Detection & Anti-Stagnation Engine
+
+## 64.1 Detection Metrics
+The Loop Detector evaluates the deliberation log over a rolling window of $K=6$ turns using three algorithms:
+
+1. **Exact & Near-Deduplication (Cosine Similarity over Embeddings / MinHash):**
+   If similarity between participant $P_i$'s turn $T_n$ and prior turn $T_{n-2}$ exceeds 0.88 with no new evidence introduced, a duplicate argument flag is raised.
+2. **Ping-Pong Rebuttal Detection:**
+   Identifies cyclic 2-party dialogues where stances oscillate without changes to the Blackboard state:
+   $$\text{Stance}(A) \leftrightarrow \text{Stance}(B) \quad \text{for } \ge 3 \text{ cycles}$$
+3. **No-Progress Threshold:**
+   If 8 consecutive turns yield 0 Blackboard patches and 0 capability requests, stagnation is triggered.
+
+## 64.2 Escalation Matrix
+| Trigger Level | Signal | Action Executed by Arena Core |
+|---|---|---|
+| **Level 1 (Warning)** | Repetition detected once | Inject system prompt: *"Arena Notice: Claim X has been stated without new data. What specific test will resolve this?"* |
+| **Level 2 (Intervention)** | Cyclic ping-pong detected | Temporarily silence both participants; grant floor to a third independent participant (e.g. `Gemini` or `Local`). |
+| **Level 3 (Evidence Mandate)** | Deadlock on empirical claim | Arena scheduler forces a tool execution turn or requires participants to frame a testable benchmark. |
+| **Level 4 (Human Escalation)** | Unresolved deadlock > 10 turns | Arena executes `session.pause` and signals operator with a structured disagreement summary. |
+
+---
+
+# 65. Capability Broker & Terminal Bridge v2.0 Integration
+
+## 65.1 Interface Contract
+The Capability Broker acts as the secure intermediary between AI participants and system facilities. It communicates directly with [terminal_bridge.py](file:///C:/Users/droxa/bridge/terminal_bridge.py) via its MCP and REST interfaces.
+
+```text
+   ┌────────────────────────────────────────────────────────┐
+   │                       ARENA CORE                       │
+   │                                                        │
+   │   ┌────────────────────────────────────────────────┐   │
+   │   │               Capability Broker                │   │
+   │   │  - Validates session permissions               │   │
+   │   │  - Enforces active capability leases           │   │
+   │   │  - Audits invocations with HMAC tokens         │   │
+   │   └───────────────────────┬────────────────────────┘   │
+   └───────────────────────────┼────────────────────────────┘
+                               │ JSON-RPC / MCP HTTP
+                               ▼
+   ┌────────────────────────────────────────────────────────┐
+   │                 TERMINAL BRIDGE v2.0                   │
+   │                                                        │
+   │   Control Mode: True/False (Requires Auth Token)       │
+   │                                                        │
+   │   Exposed MCP Tools:                                   │
+   │   - get_context_snapshot                               │
+   │   - get_events                                         │
+   │   - read_file (bounded, blocks credentials)            │
+   │   - list_directory                                     │
+   │   - execute_command (auth & control mode only)         │
+   └────────────────────────────────────────────────────────┘
+```
+
+## 65.2 Capability Lease Lifecycle
+1. **Request:** Model emits `capability.request { capability_id: "terminal.execute", command: "..." }`.
+2. **Authorization:** Broker verifies:
+   - Is `terminal.execute` enabled in the session policy?
+   - Does participant have execution clearance?
+   - If requiring human clearance, prompt operator via UI/CLI.
+3. **Lease Issuance:** Broker mints an ephemeral HMAC lease token valid for $T \le 300\text{ seconds}$.
+4. **Execution:** Broker calls [terminal_bridge.py](file:///C:/Users/droxa/bridge/terminal_bridge.py) MCP endpoint:
+   `POST /mcp` with method `tools/call`, tool `execute_command`, injecting the required bridge authorization header.
+5. **Telemetry Telecast:** As stdout/stderr stream from the bridge, the broker broadcasts `capability.chunk` and `capability.result` into the Arena Event stream.
+
+---
+
+# 66. Human Governance & Interactivity Protocol
+
+## 66.1 Operator Command Grammar
+The operator can issue commands at any time via CLI or Webhook. Operator commands preempt all agent turns immediately.
+
+| Command | Arguments | System Effect |
+|---|---|---|
+| `/freeze` | None | Halts event dispatch immediately. Preserves all socket buffers and timers. |
+| `/resume` | None | Restores event loop and active turn clocks. |
+| `/stop` | None | Terminates current session, persists complete WAL and Blackboard summary. |
+| `/mute` | `<participant_id>` | Revokes speaking authority from model; retains inbound streaming. |
+| `/unmute` | `<participant_id>` | Restores model eligibility for floor requests. |
+| `/grant` | `<participant_id> <capability> [scope]` | Grants capability lease with optional path or command whitelist. |
+| `/revoke` | `<participant_id> <capability>` | Immediately terminates active lease and kills executing subprocesses. |
+| `/ask` | `<participant_id> <prompt>` | Directs model to respond next, overriding priority queue. |
+| `/broadcast` | `<message>` | Injects human instruction as high-priority system directive to all agents. |
+| `/branch` | `<new_branch_id>` | Forks current Blackboard state and conversation tree into isolated side-room. |
+| `/merge` | `<branch_id>` | Reconciles accepted assertions from side branch into `main` Blackboard. |
+| `/summarize` | None | Prompts all participants to output current consensus and open reservations. |
+
+---
+
+# 67. Resilience, Fault Tolerance & Disconnect Handling
+
+## 67.1 Failure Modes & Mitigations
+1. **Model API Outage / Rate Limit (HTTP 429 / 503):**
+   - Adapter catches error and dispatches `system.participant_degraded { participant_id: "X", retry_after_ms: 12000 }`.
+   - Arena scheduler marks model `UNAVAILABLE`, retains its inbox queue without eviction, and redistributes turn priority.
+2. **Abrupt Socket Disconnection:**
+   - On connection drop, participant enters `DISCONNECTED` state.
+   - 60-second re-attachment window granted.
+   - Upon reconnect, client transmits `arena.resume { last_received_seq: 1042 }`.
+   - Arena replays missed events directly from the in-memory ring buffer.
+3. **Runaway / Infinite Generation:**
+   - Arena Core enforces hard `max_duration_ms` (default 60s) and `max_tokens` (default 2048) per turn.
+   - Upon limit breach, Arena issues WebSocket frame `turn.abort` and sends `turn.end { reason: "limit_exceeded" }`.
+
+---
+
+# 68. Phase 0 MVP Execution & Test Harness
+
+## 68.1 Scope & Architecture of v0 MVP
+The initial runnable milestone satisfies the fundamental requirement:
+> **Two independent OpenAI (ChatGPT) instances conduct a verified, multi-turn technical deliberation with deterministic sequencing, tool observation via Terminal Bridge v2.0, and zero manual copy/paste.**
+
+```text
+                           ┌──────────────────────────────┐
+                           │      ARENA CORE v0 (Local)   │
+                           │  - asyncio WebSocket Server  │
+                           │  - Monotonic WAL Logger      │
+                           │  - Turn State Machine        │
+                           └──────────────┬───────────────┘
+                                          │
+                  ┌───────────────────────┴───────────────────────┐
+                  │                                               │
+                  ▼                                               ▼
+     ┌────────────────────────┐                      ┌────────────────────────┐
+     │  OpenAI Adapter (A)    │                      │  OpenAI Adapter (B)    │
+     │  Participant: "gpt-a"  │                      │  Participant: "gpt-b"  │
+     │  Model: gpt-4o         │                      │  Model: gpt-4o         │
+     └────────────────────────┘                      └────────────────────────┘
+                  │                                               │
+                  └───────────────────────┬───────────────────────┘
+                                          │
+                                          ▼
+                             ┌────────────────────────┐
+                             │  Terminal Bridge v2.0  │
+                             │  (Localhost:8000)      │
+                             │  Read-Only Observation │
+                             └────────────────────────┘
+```
+
+## 68.2 Directory Layout
+```text
+bridge/
+├── docs/
+│   ├── # AI Arena.txt             # Complete PRD & Protocol Specification
+│   └── arena_wire_spec.json       # JSON-Schema specifications for all events
+├── arena/
+│   ├── __init__.py
+│   ├── server.py                  # Arena Core WebSocket server & event router
+│   ├── engine.py                  # State machine, floor scheduler & turn lifecycle
+│   ├── models.py                  # Pydantic v2 schemas for all Arena envelopes
+│   ├── storage.py                 # Append-only WAL persistence & replay reader
+│   ├── blackboard.py              # In-memory shared state & patch applicator
+│   ├── broker.py                  # Capability Broker interfacing Terminal Bridge
+│   └── adapters/
+│       ├── base.py                # Abstract Base Adapter contract
+│       └── openai_adapter.py      # OpenAI API / ChatGPT streaming adapter
+└── tests/
+    └── arena/
+        ├── test_envelope_validation.py
+        ├── test_turn_state_machine.py
+        ├── test_monotonic_sequencing.py
+        ├── test_speculative_barrier.py
+        └── test_openai_deliberation_harness.py
+```
+
+## 68.3 Minimal Automated Test Suite (Acceptance Criteria)
+1. `test_monotonic_sequencing`: Asserts that 1,000 concurrently generated events receive strictly monotonic `arena_seq` values without collisions or gaps.
+2. `test_turn_state_machine_illegal_transitions`: Confirms that an adapter attempting to emit chunks outside of `SPEAKING` state is rejected with protocol errors.
+3. `test_speculative_barrier`: Proves that listener scratchpads discard speculative tokens when an unexpected `turn.abort` occurs.
+4. `test_mvp_deliberation_loop`: Runs a live 10-turn conversation between `gpt-a` and `gpt-b` discussing an architectural problem, verifies that all turns are recorded in the WAL, validates that the human performed zero relays, and checks that Terminal Bridge context was queried and factored into the consensus statement.
